@@ -277,7 +277,7 @@ func takeQuiz(ctx context.Context, querier repo.Querier, scanner *bufio.Scanner)
 	} else if percentage >= 60 {
 		fmt.Println(" Good effort! Keep it up!")
 	} else {
-		fmt.Println("💪 Keep practicing! You'll improve!")
+		fmt.Println("Keep practicing! You'll improve!")
 	}
 
 	// Show ranking
@@ -302,7 +302,7 @@ func viewLeaderboard(ctx context.Context, querier repo.Querier, scanner *bufio.S
 	}
 
 	if len(quizzes) == 0 {
-		fmt.Println("\n📭 No quizzes available yet.")
+		fmt.Println("\n No quizzes available yet.")
 		return nil
 	}
 
@@ -568,7 +568,7 @@ func viewGlobalStats(ctx context.Context, querier repo.Querier) error {
 	totalQuestions := 0
 	uniquePlayers := make(map[string]bool)
 
-	fmt.Println("\n🌍 GLOBAL STATISTICS")
+	fmt.Println("\n GLOBAL STATISTICS")
 	fmt.Println(strings.Repeat("=", 50))
 
 	for _, quiz := range quizzes {
