@@ -107,6 +107,26 @@ func (q *Queries) CreateQuizAttempt(ctx context.Context, arg CreateQuizAttemptPa
 	return i, err
 }
 
+const deleteQuestion = `-- name: DeleteQuestion :exec
+DELETE  FROM questions
+WHERE id = $1
+`
+
+func (q *Queries) DeleteQuestion(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteQuestion, id)
+	return err
+}
+
+const deleteQuiz = `-- name: DeleteQuiz :exec
+DELETE FROM quizzes
+WHERE id = $1
+`
+
+func (q *Queries) DeleteQuiz(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteQuiz, id)
+	return err
+}
+
 const getQuestionByID = `-- name: GetQuestionByID :one
 SELECT id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_at FROM questions
 WHERE id = $1
@@ -226,6 +246,68 @@ func (q *Queries) GetQuizByID(ctx context.Context, id string) (Quiz, error) {
 	return i, err
 }
 
+const getQuizStats = `-- name: GetQuizStats :one
+SELECT 
+    COUNT(*) as attemps_count,
+    AVG(score :: float / total_questions :: float * 100) as avg_score_percent,
+    MAX(score) as highest_score,
+    MIN(score) as lowest_score
+FROM quiz_attempts
+WHERE quiz_id = $1
+`
+
+type GetQuizStatsRow struct {
+	AttempsCount    int64       `json:"attemps_count"`
+	AvgScorePercent float64     `json:"avg_score_percent"`
+	HighestScore    interface{} `json:"highest_score"`
+	LowestScore     interface{} `json:"lowest_score"`
+}
+
+func (q *Queries) GetQuizStats(ctx context.Context, quizID string) (GetQuizStatsRow, error) {
+	row := q.db.QueryRow(ctx, getQuizStats, quizID)
+	var i GetQuizStatsRow
+	err := row.Scan(
+		&i.AttempsCount,
+		&i.AvgScorePercent,
+		&i.HighestScore,
+		&i.LowestScore,
+	)
+	return i, err
+}
+
+const listQuizAttempts = `-- name: ListQuizAttempts :many
+SELECT id, quiz_id, user_name, score, total_questions, created_at FROM quiz_attempts
+WHERE quiz_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListQuizAttempts(ctx context.Context, quizID string) ([]QuizAttempt, error) {
+	rows, err := q.db.Query(ctx, listQuizAttempts, quizID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []QuizAttempt{}
+	for rows.Next() {
+		var i QuizAttempt
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuizID,
+			&i.UserName,
+			&i.Score,
+			&i.TotalQuestions,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listQuizzes = `-- name: ListQuizzes :many
 SELECT id, title, description, created_at FROM quizzes
 ORDER BY created_at DESC
@@ -254,4 +336,77 @@ func (q *Queries) ListQuizzes(ctx context.Context) ([]Quiz, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateQuestion = `-- name: UpdateQuestion :one
+UPDATE questions
+SET question_text = $2, 
+    option_a = $3, 
+    option_b = $4, 
+    option_c = $5, 
+    option_d = $6, 
+    correct_answer = $7
+WHERE id = $1
+RETURNING id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_at
+`
+
+type UpdateQuestionParams struct {
+	ID            string `json:"id"`
+	QuestionText  string `json:"question_text"`
+	OptionA       string `json:"option_a"`
+	OptionB       string `json:"option_b"`
+	OptionC       string `json:"option_c"`
+	OptionD       string `json:"option_d"`
+	CorrectAnswer string `json:"correct_answer"`
+}
+
+func (q *Queries) UpdateQuestion(ctx context.Context, arg UpdateQuestionParams) (Question, error) {
+	row := q.db.QueryRow(ctx, updateQuestion,
+		arg.ID,
+		arg.QuestionText,
+		arg.OptionA,
+		arg.OptionB,
+		arg.OptionC,
+		arg.OptionD,
+		arg.CorrectAnswer,
+	)
+	var i Question
+	err := row.Scan(
+		&i.ID,
+		&i.QuizID,
+		&i.QuestionText,
+		&i.OptionA,
+		&i.OptionB,
+		&i.OptionC,
+		&i.OptionD,
+		&i.CorrectAnswer,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateQuiz = `-- name: UpdateQuiz :one
+UPDATE quizzes 
+SET title = $2,
+    description = $3
+WHERE id = $1
+RETURNING id, title, description, created_at
+`
+
+type UpdateQuizParams struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+func (q *Queries) UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (Quiz, error) {
+	row := q.db.QueryRow(ctx, updateQuiz, arg.ID, arg.Title, arg.Description)
+	var i Quiz
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return i, err
 }

@@ -12,11 +12,17 @@ type Querier interface {
 	CreateQuestion(ctx context.Context, arg CreateQuestionParams) (Question, error)
 	CreateQuiz(ctx context.Context, arg CreateQuizParams) (Quiz, error)
 	CreateQuizAttempt(ctx context.Context, arg CreateQuizAttemptParams) (QuizAttempt, error)
+	DeleteQuestion(ctx context.Context, id string) error
+	DeleteQuiz(ctx context.Context, id string) error
 	GetQuestionByID(ctx context.Context, id string) (Question, error)
 	GetQuestionsByQuizID(ctx context.Context, quizID string) ([]GetQuestionsByQuizIDRow, error)
 	GetQuizAttemptsByQuizID(ctx context.Context, quizID string) ([]QuizAttempt, error)
 	GetQuizByID(ctx context.Context, id string) (Quiz, error)
+	GetQuizStats(ctx context.Context, quizID string) (GetQuizStatsRow, error)
+	ListQuizAttempts(ctx context.Context, quizID string) ([]QuizAttempt, error)
 	ListQuizzes(ctx context.Context) ([]Quiz, error)
+	UpdateQuestion(ctx context.Context, arg UpdateQuestionParams) (Question, error)
+	UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (Quiz, error)
 }
 
 var _ Querier = (*Queries)(nil)

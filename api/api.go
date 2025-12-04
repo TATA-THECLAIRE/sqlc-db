@@ -30,13 +30,20 @@ func (h *QuizHandler) WireHttpHandler() http.Handler {
 	r.POST("/quizzes", h.handleCreateQuiz)
 	r.GET("/quizzes/:id", h.handleGetQuiz)
 	r.GET("/quizzes/:id/questions", h.handleGetQuizQuestions)
+    r.DELETE("/quizzes/:id", h.handleDeleteQuiz)
+	r.PUT("/quizzes/:id", h.handleUpdateQuiz)
+	r.GET("/quizzes/:id/stats", h.handleQuizStats)
+	r.GET("/quizzes/:id/attempts", h.handleListQuizAttempts)
 
 	// Question endpoints
 	r.POST("/questions", h.handleCreateQuestion)
+	r.PUT("/questions/:id", h.handleUpdateQuestion)
+	r.DELETE("/questions/:id", h.handleDeleteQuestion)
 
 	// Attempt endpoints
 	r.POST("/attempts", h.handleCreateAttempt)
 	r.GET("/leaderboard/:quiz_id", h.handleLeaderboard)
+
 
 	return r
 }
@@ -100,6 +107,70 @@ func (h *QuizHandler) handleGetQuizQuestions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, questions)
+}
+
+func (h *QuizHandler)  handleQuizStats(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		return
+	}
+
+	stats, err := h.querier.GetQuizStats(c, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+func (h *QuizHandler)  handleDeleteQuestion(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		return
+	}
+
+	err := h.querier.DeleteQuestion(c, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, err)
+}
+
+func (h *QuizHandler)  handleDeleteQuiz(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		return
+	}
+
+	err := h.querier.DeleteQuiz(c, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, err)
+}
+
+func (h *QuizHandler)  handleListQuizAttempts(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+		return
+	}
+
+	attempts, err := h.querier.ListQuizAttempts(c, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, attempts)
 }
 
 // Question handlers
@@ -208,4 +279,46 @@ func (h *QuizHandler) handleLeaderboard(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, attempts)
+}
+
+func (h *QuizHandler) handleUpdateQuiz(c *gin.Context) {
+    id := c.Param("id")
+    
+    var req repo.UpdateQuizParams
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    
+    req.ID = id
+    
+    quiz, err := h.querier.UpdateQuiz(c, req)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, quiz)
+}
+
+func (h *QuizHandler) handleUpdateQuestion(c *gin.Context) {
+    id := c.Param("id")
+    
+    var req repo.UpdateQuestionParams
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    
+    req.ID = id
+    
+    q, err := h.querier.UpdateQuestion(c, req)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, q)
 }
