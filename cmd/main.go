@@ -345,13 +345,15 @@ func viewLeaderboard(ctx context.Context, querier repo.Querier, scanner *bufio.S
 		percentage := float64(attempt.Score) / float64(attempt.TotalQuestions) * 100
 		rank := fmt.Sprintf("#%d", i+1)
 		medal := ""
-		if i == 0 {
-			medal = "🥇"
-		} else if i == 1 {
-			medal = "🥈"
-		} else if i == 2 {
-			medal = "🥉"
+		switch i {
+			case 0:
+				medal = "🥇"
+			case 1:
+				medal = "🥈"
+			case 2:
+				medal = "🥉"
 		}
+
 
 		// Truncate long names
 		displayName := attempt.UserName
@@ -446,13 +448,15 @@ func showGlobalLeaderboard(ctx context.Context, querier repo.Querier) error {
 		percentage := float64(stats.TotalScore) / float64(stats.TotalQuestions) * 100
 		rank := fmt.Sprintf("#%d", i+1)
 		medal := ""
-		if i == 0 {
-			medal = "🥇"
-		} else if i == 1 {
-			medal = "🥈"
-		} else if i == 2 {
-			medal = "🥉"
+			switch i {
+			case 0:
+				medal = "🥇"
+			case 1:
+				medal = "🥈"
+			case 2:
+				medal = "🥉"
 		}
+
 
 		displayName := stats.Name
 		if len(displayName) > 25 {
